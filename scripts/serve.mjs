@@ -8,6 +8,7 @@ createServer(async (req, res) => {
     const path = decodeURIComponent(new URL(req.url, 'http://localhost').pathname);
     const file = resolve(root, '.' + (path === '/' ? '/index.html' : path));
     if (!file.startsWith(root + sep) || !types[extname(file)]) { res.writeHead(404).end(); return; }
-    res.writeHead(200, {'Content-Type':types[extname(file)], 'Cache-Control':'no-store'}).end(await readFile(file));
+    const contents=await readFile(file);
+    res.writeHead(200, {'Content-Type':types[extname(file)], 'Cache-Control':'no-store'}).end(contents);
   } catch { if (!res.headersSent) res.writeHead(404); res.end(); }
 }).listen(4195, '127.0.0.1', () => console.log('RubricKit: http://127.0.0.1:4195'));
