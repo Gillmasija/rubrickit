@@ -1,11 +1,12 @@
-import {load,save} from './store.js';
-import {summarize,LEVELS,upsertCriterion,removeCriterion,moveCriterion} from './model.js';
+import {load,save,clear,KEY} from './store.js';
+import {summarize,LEVELS,upsertCriterion,removeCriterion,moveCriterion,parseBackup,MAX_BACKUP_BYTES} from './model.js';
+import {demo} from './demo.js';
 const page = document.body.dataset.page;
 document.querySelector(`[data-nav="${page}"]`).setAttribute('aria-current','page');
 const app = document.querySelector('#app');
 let workspace;
 try { workspace = load(localStorage); } catch { workspace = load({getItem(){throw new Error('Storage blocked.');}}); }
-function escape(value) { return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escape(value) { return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function notice(message,error=false) {
   const el=document.querySelector('#notice'); el.hidden=false; el.textContent=message; el.className=error?'':'success'; el.setAttribute('role',error?'alert':'status');
 }
@@ -81,6 +82,36 @@ function renderReport() {
   <aside>${scoreSummary()}<section class="panel"><h2>Ready to share?</h2><p class="muted">Check the evidence and next step, then print or save as PDF using your browser.</p><div class="actions"><button id="print">Print feedback</button><a href="score.html" class="button secondary">Edit sample</a></div><p class="help">The sheet uses saved values only.</p></section></aside></div>`;
   document.querySelector('#print').onclick=()=>window.print();
 }
-function render() { if(page==='rubric') renderRubric(); else if(page==='score') renderScore(); else renderReport(); }
+function download(text,name) {
+  const url=URL.createObjectURL(new Blob([text],{type:'application/json'})),anchor=document.createElement('a');
+  anchor.href=url;anchor.download=name;anchor.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function renderTools() {
+  document.querySelector('#tools').innerHTML=`<details ${workspace.error?'open':''}><summary>Backup & recovery</summary><p class="help">One rubric and one sample are stored in this browser. Clearing browser data removes them. Export a backup to keep a copy. Imports replace the whole workspace.</p><div class="actions"><button class="secondary" id="export" ${workspace.error?'disabled':''}>Export saved backup</button><button class="secondary" id="demo">Load synthetic demo</button><button class="subtle danger" id="reset">Clear workspace</button></div><div class="field file-control"><label for="import">Restore JSON backup <span>· up to 100 KB</span></label><input id="import" type="file" accept=".json,application/json"></div>${workspace.error?'<p class="alert">Existing data has been left untouched. Download the unreadable data before clearing this workspace.</p><button id="raw" class="secondary">Download unreadable data</button>':''}</details>`;
+  document.querySelector('#export').onclick=()=>{download(JSON.stringify(workspace.state,null,2),'rubrickit-backup.json');notice('Saved workspace exported. Unsaved form values are not included.');};
+  document.querySelector('#demo').onclick=()=>{if(confirm('Replace the saved rubric and sample with synthetic practice data? Export a backup first if you want to keep your work.'))persist(demo(),'Synthetic demo loaded. Explore the rubric, score, and feedback pages.');};
+  document.querySelector('#reset').onclick=()=>{
+    try {
+      // Capture before confirmation; clear still compares to catch intervening writes.
+      const expected=workspace.error?localStorage.getItem(KEY):workspace.raw;
+      if(confirm('Permanently clear this browser workspace? Export a backup first to keep a copy.')){workspace=clear(localStorage,expected);render();notice('Workspace cleared. Start a fresh rubric.');}
+    } catch(error){notice(error.message,true);}
+  };
+  document.querySelector('#raw')?.addEventListener('click',()=>{
+    try{download(localStorage.getItem(KEY)||'','rubrickit-unreadable.json');}catch(error){notice(`Cannot access storage: ${error.message}`,true);}
+  });
+  document.querySelector('#import').onchange=async e=>{
+    const file=e.target.files[0];if(!file)return;
+    const revision=workspace.raw;e.target.disabled=true;notice('Reading and validating backup…');
+    try {
+      if(file.size>MAX_BACKUP_BYTES)throw new Error('Backup exceeds 100 KB.');
+      const state=parseBackup(await file.text());
+      if(workspace.raw!==revision)throw new Error('Workspace changed while reading. Select the file again.');
+      if(confirm(`Replace your workspace with “${state.title}” (${state.criteria.length} criteria)?`))persist(state,'Backup restored.');
+      else notice('Restore cancelled. Saved work was not changed.');
+    }catch(error){notice(error.message,true);}finally{e.target.disabled=false;e.target.value='';}
+  };
+}
+function render() { if(page==='rubric') renderRubric(); else if(page==='score') renderScore(); else renderReport(); renderTools(); }
 render();
 if (workspace.error) notice(workspace.error,true);
