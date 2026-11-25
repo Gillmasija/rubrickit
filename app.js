@@ -4,14 +4,27 @@ import {demo} from './demo.js';
 const page = document.body.dataset.page;
 document.querySelector(`[data-nav="${page}"]`).setAttribute('aria-current','page');
 const app = document.querySelector('#app');
+const dirtyForms = new Set();
+document.addEventListener('input',event=>{if(event.target.form?.id)dirtyForms.add(event.target.form.id);});
+document.addEventListener('change',event=>{if(event.target.form?.id)dirtyForms.add(event.target.form.id);});
+window.addEventListener('beforeunload',event=>{if(dirtyForms.size){event.preventDefault();event.returnValue='';}});
+document.addEventListener('click',event=>{
+  const link=event.target.closest('a[href]');
+  if(link && !link.getAttribute('href').startsWith('#') && dirtyForms.size){
+    if(!confirm('Leave without saving your form changes?'))event.preventDefault();
+    else dirtyForms.clear();
+  }
+});
+window.addEventListener('storage',event=>{if(event.key===KEY || event.key===null)notice('This workspace changed in another tab. Reload to see the latest saved work before editing.',true);});
 let workspace;
 try { workspace = load(localStorage); } catch { workspace = load({getItem(){throw new Error('Storage blocked.');}}); }
 function escape(value) { return String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function notice(message,error=false) {
   const el=document.querySelector('#notice'); el.hidden=false; el.textContent=message; el.className=error?'':'success'; el.setAttribute('role',error?'alert':'status');
 }
-function persist(state,message) {
+function persist(state,message,formId=null) {
   try {
+    if([...dirtyForms].some(id=>id!==formId) && !confirm('Continue and discard unsaved changes in the other forms?'))return false;
     if (workspace.error) throw new Error('Resolve the saved-work error in Backup & recovery before saving.');
     workspace=save(localStorage,state,workspace.raw); render(); notice(message); return true;
   } catch (error) { notice(error.message,true); return false; }
@@ -33,21 +46,23 @@ function renderRubric() {
     </div><aside>${summary()}<section class="panel"><h2>One consistent scale</h2>${scale()}<p class="help">0 = no evidence yet. 3 = the expectation is fully met. Describe the expectation for each criterion.</p><a class="button secondary" href="score.html">Score a sample</a></section><p class="help">Save each form before switching pages. Work stays in this browser.</p></aside></div>`;
   document.querySelector('#assignment').onsubmit=e=>{
     e.preventDefault(); const data=new FormData(e.currentTarget);
-    persist({...state,title:data.get('title'),description:data.get('description')},'Assignment saved on this device.');
+    persist({...state,title:data.get('title'),description:data.get('description')},'Assignment saved on this device.','assignment');
   };
   document.querySelector('#criterion-form').onsubmit=e=>{
     e.preventDefault(); const data=new FormData(e.currentTarget);
     try {
       const criterion={id:data.get('id')||crypto.randomUUID(),name:data.get('name'),weight:Number(data.get('weight')),detail:data.get('detail')};
-      if(persist(upsertCriterion(state,criterion),'Criterion saved. Check your weights before scoring.')) document.querySelector('#criterion-name').focus();
+      if(persist(upsertCriterion(state,criterion),'Criterion saved. Check your weights before scoring.','criterion-form')) document.querySelector('#criterion-name').focus();
     } catch(error) {notice(error.message,true);}
   };
   document.querySelectorAll('[data-edit]').forEach(button=>button.onclick=()=>{
+    if(dirtyForms.has('criterion-form') && !confirm('Discard your unsaved criterion changes?'))return;
+    dirtyForms.delete('criterion-form');
     const c=state.criteria.find(c=>c.id===button.dataset.edit), form=document.querySelector('#criterion-form');
     for(const key of ['id','name','weight','detail']) form.elements.namedItem(key).value=c[key];
     document.querySelector('#editor-title').textContent='Edit criterion';document.querySelector('#criterion-submit').textContent='Save criterion';document.querySelector('#cancel-edit').hidden=false;form.elements.namedItem('name').focus();
   });
-  document.querySelector('#cancel-edit').onclick=()=>render();
+  document.querySelector('#cancel-edit').onclick=()=>{if(!dirtyForms.size || confirm('Discard unsaved form changes?'))render();};
   document.querySelectorAll('[data-delete]').forEach(button=>button.onclick=()=>{
     if(confirm('Remove this criterion and its sample score and feedback?')) persist(removeCriterion(state,button.dataset.delete),'Criterion removed.');
   });
@@ -70,7 +85,7 @@ function renderScore() {
     return next;
   };
   document.querySelector('#score-form').onchange=()=>{document.querySelector('#score-summary').innerHTML=scoreSummary(readSample())+'<p class="help">Preview of form values. Save to update feedback.</p>';};
-  document.querySelector('#score-form').onsubmit=e=>{e.preventDefault();persist(readSample(),'Sample saved. Your feedback sheet is up to date.');};
+  document.querySelector('#score-form').onsubmit=e=>{e.preventDefault();persist(readSample(),'Sample saved. Your feedback sheet is up to date.','score-form');};
 }
 function renderReport() {
   const state=workspace.state,s=summarize(state);
@@ -112,6 +127,6 @@ function renderTools() {
     }catch(error){notice(error.message,true);}finally{e.target.disabled=false;e.target.value='';}
   };
 }
-function render() { if(page==='rubric') renderRubric(); else if(page==='score') renderScore(); else renderReport(); renderTools(); }
+function render() { dirtyForms.clear(); if(page==='rubric') renderRubric(); else if(page==='score') renderScore(); else renderReport(); renderTools(); }
 render();
 if (workspace.error) notice(workspace.error,true);
