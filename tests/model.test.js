@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {emptyState,validate,summarize,upsertCriterion,removeCriterion,moveCriterion,parseBackup} from '../model.js';
+import {demo} from '../demo.js';
 const criterion = (id, weight) => ({id,name:id,detail:'Use evidence.',weight});
 function fixture() { let s = emptyState(); s.criteria = [criterion('a',40),criterion('b',60)]; return s; }
 test('empty, invalid-weight and missing score states have no total', () => {
@@ -33,4 +34,7 @@ test('backup round trips and rejects malformed, oversized and orphaned feedback'
   const s = fixture(); assert.deepEqual(parseBackup(JSON.stringify(s)),s);
   assert.throws(()=>parseBackup('{')); assert.throws(()=>parseBackup(' '.repeat(100001)));
   s.sample.feedback.other = 'bad'; assert.throws(()=>validate(s));
+});
+test('synthetic demo has a verified 63.3 percent weighted total',()=>{
+  const state=validate(demo()); assert.equal(summarize(state).total.toFixed(1),'63.3');
 });

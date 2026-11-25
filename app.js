@@ -55,6 +55,25 @@ function renderRubric() {
   });
   for(const [action,direction] of [['up',-1],['down',1]]) document.querySelectorAll(`[data-${action}]`).forEach(button=>button.onclick=()=>persist(moveCriterion(state,button.dataset[action],direction),'Criterion order saved.'));
 }
-function render() { if(page==='rubric') renderRubric(); else renderPlaceholder(); }
+function scoreSummary(state=workspace.state) {
+  const s=summarize(state);
+  return `<section class="panel green"><p class="eyebrow" style="color:inherit">${s.complete?'WEIGHTED RESULT':'SCORING PROGRESS'}</p><div class="big-number">${s.complete?s.total.toFixed(1):s.scored}<span>${s.complete?'/ 100':`/ ${state.criteria.length} scored`}</span></div><p>${s.complete?'Every criterion has a score.':s.ready?'Finish all criteria to see the total.':'Balance your rubric to 100% before scoring.'}</p><p class="muted help">Result = sum of weight × level ÷ 3. Totals round to one decimal.</p></section>`;
+}
+function renderScore() {
+  const state=workspace.state,s=summarize(state);
+  if(!s.ready) {app.innerHTML=`<section class="panel"><h2>A balanced rubric comes first</h2><p>You have ${state.criteria.length} criteria with a total weight of ${s.weight}%. Add criteria and make the weights total exactly 100% to begin.</p><a class="button" href="index.html">Build your rubric</a></section>`;return;}
+  app.innerHTML=`<div class="layout"><section class="panel"><h2>${escape(state.title)}</h2><p class="muted report-text">${escape(state.description)}</p><form id="score-form"><div class="field"><label for="sample-label">Anonymous sample label <span>· optional</span></label><input id="sample-label" name="label" maxlength="100" value="${escape(state.sample.label)}" placeholder="e.g. Practice pitch A"><p class="help">Use a sample code, not a learner’s name or sensitive information.</p></div>
+    ${state.criteria.map(c=>`<fieldset class="score-card"><legend>${escape(c.name)} <span class="badge">${c.weight}%</span></legend><p class="muted">${escape(c.detail)||'No expectation added.'}</p><div class="field"><label for="score-${c.id}">Performance level</label><select id="score-${c.id}" name="score-${c.id}"><option value="">Not scored</option>${LEVELS.map((name,i)=>`<option value="${i}" ${state.sample.scores[c.id]===i?'selected':''}>${i} — ${name}</option>`).join('')}</select></div><div class="field"><label for="feedback-${c.id}">Evidence & feedback <span>· optional</span></label><textarea id="feedback-${c.id}" name="feedback-${c.id}" maxlength="600" placeholder="What did you notice? What would improve this work?">${escape(state.sample.feedback[c.id]||'')}</textarea></div></fieldset>`).join('')}
+    <div class="field"><label for="next-step">One next step <span>· optional</span></label><textarea id="next-step" name="nextStep" maxlength="1000">${escape(state.sample.nextStep)}</textarea></div><div class="actions"><button>Save sample</button><a href="report.html" class="button secondary">View feedback</a></div><p class="help">Save before opening feedback. Partial scores can be saved.</p></form></section><aside><div id="score-summary">${scoreSummary()}</div><section class="panel"><h2>Feedback that helps</h2><p class="muted">Name the evidence you saw. Connect it to the expectation. Suggest one manageable improvement.</p><p class="help">This is a transparent scoring aid, not an automatic grading decision.</p></section></aside></div>`;
+  const readSample=()=>{
+    const data=new FormData(document.querySelector('#score-form')),next=structuredClone(state);
+    next.sample={label:data.get('label'),scores:{},feedback:{},nextStep:data.get('nextStep')};
+    for(const c of state.criteria) { const value=data.get(`score-${c.id}`);if(value!=='')next.sample.scores[c.id]=Number(value);next.sample.feedback[c.id]=data.get(`feedback-${c.id}`); }
+    return next;
+  };
+  document.querySelector('#score-form').onchange=()=>{document.querySelector('#score-summary').innerHTML=scoreSummary(readSample())+'<p class="help">Preview of form values. Save to update feedback.</p>';};
+  document.querySelector('#score-form').onsubmit=e=>{e.preventDefault();persist(readSample(),'Sample saved. Your feedback sheet is up to date.');};
+}
+function render() { if(page==='rubric') renderRubric(); else if(page==='score') renderScore(); else renderPlaceholder(); }
 render();
 if (workspace.error) notice(workspace.error,true);
