@@ -8,5 +8,8 @@
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.js",
     "lint": "node scripts/lint.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1"
   }
 }
