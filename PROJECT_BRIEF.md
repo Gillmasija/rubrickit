@@ -17,16 +17,16 @@ Skills: frontend product design, accessible forms, data validation, weighted
 arithmetic, local persistence, browser testing, documentation and CI.
 
 ## Acceptance criteria
-- [ ] Create, edit, reorder and remove 1–12 criteria with integer weights 1–100.
-- [ ] Require a total weight of exactly 100 before scoring or reporting a total.
-- [ ] Use four fixed levels, 0–3; show formula and criterion contributions.
-- [ ] Treat unscored criteria as incomplete, never silently as zero.
-- [ ] Save rubric and anonymous sample locally; survive navigation and reload.
-- [ ] Prevent stale tabs from silently overwriting newer saved work; handle unavailable/corrupt storage.
-- [ ] Safely export/import a versioned, bounded JSON backup; confirm replacement.
-- [ ] Include a deliberate synthetic demo, meaningful empty/error states, and print feedback.
-- [ ] Clear navigation, matching favicon, keyboard controls and usable 320px layout.
-- [ ] Relevant unit/browser tests, lint and production build pass; document limitations and screenshots.
+- [x] Create, edit, reorder and remove 1–12 criteria with integer weights 1–100.
+- [x] Require a total weight of exactly 100 before scoring or reporting a total.
+- [x] Use four fixed levels, 0–3; show formula and criterion contributions.
+- [x] Treat unscored criteria as incomplete, never silently as zero.
+- [x] Save rubric and anonymous sample locally; survive navigation and reload.
+- [x] Prevent stale tabs from silently overwriting newer saved work; handle unavailable/corrupt storage.
+- [x] Safely export/import a versioned, bounded JSON backup; confirm replacement.
+- [x] Include a deliberate synthetic demo, meaningful empty/error states, and print feedback.
+- [x] Clear navigation, matching favicon, keyboard controls and usable 320px layout.
+- [x] Relevant unit/browser tests, lint and production build pass; document limitations and screenshots.
 
 ## Design decisions and boundaries
 Weights total 100; weighted percent = sum(weight × level / 3). Only the displayed
