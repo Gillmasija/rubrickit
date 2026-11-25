@@ -20,9 +20,6 @@ function summary() {
   const s=summarize(workspace.state);
   return `<section class="panel green"><p class="eyebrow" style="color:inherit">WEIGHT CHECK</p><div class="big-number">${s.weight}<span>/ 100%</span></div><div class="meter"><div style="width:${Math.min(s.weight,100)}%"></div></div><p>${s.ready?'Ready to score.':s.weight>100?`Remove ${s.weight-100}% to balance your rubric.`:`Assign ${100-s.weight}% more to balance your rubric.`}</p><span class="badge">${workspace.state.criteria.length} of 12 criteria</span></section>`;
 }
-function renderPlaceholder() {
-  app.innerHTML = `<div class="layout"><section class="panel"><h2>Your workspace</h2><p class="empty">Your rubric starts here. Add criteria to make expectations clear.</p></section><aside>${summary()}<section class="panel"><h2>One consistent scale</h2>${scale()}<p class="help">Each level earns its share of a criterion’s weight.</p></section></aside></div>`;
-}
 function renderRubric() {
   const state=workspace.state;
   app.innerHTML=`<div class="layout"><div>
@@ -74,6 +71,16 @@ function renderScore() {
   document.querySelector('#score-form').onchange=()=>{document.querySelector('#score-summary').innerHTML=scoreSummary(readSample())+'<p class="help">Preview of form values. Save to update feedback.</p>';};
   document.querySelector('#score-form').onsubmit=e=>{e.preventDefault();persist(readSample(),'Sample saved. Your feedback sheet is up to date.');};
 }
-function render() { if(page==='rubric') renderRubric(); else if(page==='score') renderScore(); else renderPlaceholder(); }
+function renderReport() {
+  const state=workspace.state,s=summarize(state);
+  if(!state.criteria.length) {app.innerHTML='<section class="panel"><h2>No feedback sheet yet</h2><p>Create a rubric, then score a sample to prepare useful feedback.</p><a class="button" href="index.html">Build your rubric</a></section>';return;}
+  app.innerHTML=`<div class="layout"><article class="panel report"><p class="eyebrow">RUBRICKIT · FEEDBACK SHEET</p><h2>${escape(state.title)}</h2><p class="report-text muted">${escape(state.description)}</p><p><strong>Sample:</strong> ${escape(state.sample.label)||'Unlabelled sample'}</p><p class="print-result"><strong>${s.complete?`${s.total.toFixed(1)} / 100`:'Incomplete — no total yet'}</strong></p>
+  ${!s.ready?'<p class="alert">Rubric weights do not total 100%. Correct the rubric before using this assessment.</p>':!s.complete?`<p class="alert">${state.criteria.length-s.scored} criteria still need a score. This is a partial feedback sheet.</p>`:''}
+  ${state.criteria.map(c=>{const scored=Object.hasOwn(state.sample.scores,c.id),level=state.sample.scores[c.id];return `<section class="criterion"><div class="criterion-head"><h3>${escape(c.name)}</h3><span class="badge">${c.weight}% weight</span></div><p class="muted report-text">${escape(c.detail)||'No expectation added.'}</p><p class="contribution">${scored?`${level} — ${LEVELS[level]} · ${(c.weight*level/3).toFixed(1)} of ${c.weight} points`:'Not scored'}</p><p class="report-text">${escape(state.sample.feedback[c.id])||'No feedback recorded.'}</p></section>`;}).join('')}
+  <section class="next-step"><h3>One next step</h3><p class="report-text">${escape(state.sample.nextStep)||'No next step recorded yet.'}</p></section><p class="help">Weighted points = criterion weight × level ÷ 3. Individual contributions and the total round separately to one decimal; rounded contributions may not add exactly to the displayed total. No grade band is assigned.</p></article>
+  <aside>${scoreSummary()}<section class="panel"><h2>Ready to share?</h2><p class="muted">Check the evidence and next step, then print or save as PDF using your browser.</p><div class="actions"><button id="print">Print feedback</button><a href="score.html" class="button secondary">Edit sample</a></div><p class="help">The sheet uses saved values only.</p></section></aside></div>`;
+  document.querySelector('#print').onclick=()=>window.print();
+}
+function render() { if(page==='rubric') renderRubric(); else if(page==='score') renderScore(); else renderReport(); }
 render();
 if (workspace.error) notice(workspace.error,true);
