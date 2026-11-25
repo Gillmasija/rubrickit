@@ -5,8 +5,8 @@ const page = document.body.dataset.page;
 document.querySelector(`[data-nav="${page}"]`).setAttribute('aria-current','page');
 const app = document.querySelector('#app');
 const dirtyForms = new Set();
-document.addEventListener('input',event=>{if(event.target.form?.id)dirtyForms.add(event.target.form.id);});
-document.addEventListener('change',event=>{if(event.target.form?.id)dirtyForms.add(event.target.form.id);});
+document.addEventListener('input',event=>{const id=event.target.form?.getAttribute('id');if(id)dirtyForms.add(id);});
+document.addEventListener('change',event=>{const id=event.target.form?.getAttribute('id');if(id)dirtyForms.add(id);});
 window.addEventListener('beforeunload',event=>{if(dirtyForms.size){event.preventDefault();event.returnValue='';}});
 document.addEventListener('click',event=>{
   const link=event.target.closest('a[href]');
