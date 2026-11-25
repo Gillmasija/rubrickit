@@ -75,7 +75,8 @@ for(const width of [1280,390,320])test(`all pages fit ${width}px viewport`,async
   await page.setViewportSize({width,height:900});await seed(page);
   for(const route of ['/','/score.html','/report.html']) {
     await page.goto(route);await expect(page.locator('h1')).toBeVisible();
-    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+    const layout=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,overflow:[...document.querySelectorAll('body *')].filter(el=>el.getBoundingClientRect().right>innerWidth+1).map(el=>`${el.tagName}.${el.className}: ${el.textContent.slice(0,50)}`)}));
+    expect(layout.scroll,`${route}: ${JSON.stringify(layout)}`).toBeLessThanOrEqual(layout.width);
     await expect(page.locator('nav a[aria-current=page]')).toHaveCount(1);
   }
 });
