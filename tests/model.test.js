@@ -38,3 +38,6 @@ test('backup round trips and rejects malformed, oversized and orphaned feedback'
 test('synthetic demo has a verified 63.3 percent weighted total',()=>{
   const state=validate(demo()); assert.equal(summarize(state).total.toFixed(1),'63.3');
 });
+test('imported criterion IDs cannot alias inherited object properties',()=>{
+  for(const id of ['constructor','toString','valueOf']) {const s=fixture();s.criteria[0].id=id;assert.throws(()=>validate(s),/IDs/);}
+});

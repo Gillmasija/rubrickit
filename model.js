@@ -15,7 +15,7 @@ export function validate(input) {
   result.description = string(input.description, 600, 'Assignment brief');
   const ids = new Set();
   result.criteria = input.criteria.map(c => {
-    if (!record(c) || typeof c.id !== 'string' || !/^[a-zA-Z0-9-]{1,64}$/.test(c.id) || ids.has(c.id)) throw new Error('Criterion IDs must be unique and valid.');
+    if (!record(c) || typeof c.id !== 'string' || !/^[a-zA-Z0-9-]{1,64}$/.test(c.id) || Object.hasOwn(Object.prototype,c.id) || ids.has(c.id)) throw new Error('Criterion IDs must be unique and valid.');
     ids.add(c.id);
     if (!Number.isInteger(c.weight) || c.weight < 1 || c.weight > 100) throw new Error('Each weight must be a whole number from 1 to 100.');
     return {id:c.id, name:string(c.name,80,'Criterion name',true), detail:string(c.detail,400,'Criterion expectation'), weight:c.weight};
