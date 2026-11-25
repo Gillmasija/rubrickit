@@ -1,7 +1,10 @@
-import {mkdir, copyFile, readdir} from 'node:fs/promises';
+import {mkdir, copyFile, readdir, unlink, lstat} from 'node:fs/promises';
 await mkdir('dist', {recursive:true});
-let count = 0;
-for (const file of await readdir('.')) {
-  if (/\.(html|css|js|svg)$/.test(file)) { await copyFile(file, `dist/${file}`); count++; }
+if ((await lstat('dist')).isSymbolicLink()) throw new Error('Build output must not be a symlink.');
+for (const file of await readdir('dist',{withFileTypes:true})) {
+  if (!file.isFile()) throw new Error(`Unexpected non-file in dist: ${file.name}`);
+  await unlink(`dist/${file.name}`);
 }
-console.log(`Built ${count} static assets in dist/`);
+const assets=['index.html','score.html','report.html','styles.css','favicon.svg','app.js','model.js','store.js','demo.js'];
+for(const file of assets)await copyFile(file,`dist/${file}`);
+console.log(`Built ${assets.length} static assets in dist/`);

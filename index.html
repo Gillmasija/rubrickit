@@ -1,2 +1,19 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>RubricKit</title><link rel="icon" href="favicon.svg" type="image/svg+xml"></head><body><main><h1>RubricKit</h1><p>A local workspace for clearer assessment.</p></main></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Create weighted rubrics and printable feedback, saved in your browser.">
+  <title>Build a clear rubric. | RubricKit</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body data-page="rubric">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="site-header"><a class="brand" href="index.html"><img src="favicon.svg" width="36" height="36" alt="">RubricKit<span>TEACHING TOOLS</span></a><nav aria-label="Main"><a href="index.html" data-nav="rubric">Rubric</a><a href="score.html" data-nav="score">Score a sample</a><a href="report.html" data-nav="report">Feedback</a></nav><span class="local-label">Saved on this device</span></header>
+  <main id="main"><div class="intro"><p class="eyebrow">A LITTLE STRUCTURE. BETTER FEEDBACK.</p><h1>Build a clear rubric.</h1><p class="lede">Define what matters. Give each criterion its share of the assessment.</p></div>
+  <p id="notice" role="status" aria-live="polite" hidden></p>
+  <div id="app"><p>Loading your workspace…</p></div>
+  <noscript><p class="alert">JavaScript is required to edit and save a rubric. No data is sent to a server.</p></noscript>
+  <section class="workspace-tools" aria-label="Workspace tools" id="tools"></section>
+  </main>
+  <footer><strong>RubricKit</strong><span>Thoughtful assessment, one criterion at a time.</span><span>Browser-local · No account needed</span></footer>
+</body></html>
